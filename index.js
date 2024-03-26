@@ -18,8 +18,9 @@ dbConnection();
 
 app.use(helmet());
 app.use(cors({
-  origin:"https://story-stream.netlify.app",
+  origin: ["https://story-stream.netlify.app", "https://story-stream-admin.netlify.app/auth"],
   methods: "GET, POST, PATCH, PUT, DELETE",
+
   credentials:true
 }));
 app.use(bodyParser.json());
