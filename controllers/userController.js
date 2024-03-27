@@ -61,40 +61,30 @@ export const resendOTP = async (req, res, next) => {
   }
 };
 
-export const followWritter = async (req, res, next) => {
+export const followWriter = async (req, res, next) => {
   try {
-    const followerId = req.body.user.userId;
-    const { id } = req.params;
+    // Extract followerId and writerId from request body and parameters
+    const { userId: followerId } = req.body.user;
+    const { id: writerId } = req.params;
 
-    const checks = await Followers.findOne({ followerId });
+    // Check if the follower is already following the writer
+    const existingFollow = await Followers.findOne({ followerId, writerId });
+    if (existingFollow) {
+      return res.status(400).json({ success: false, message: "You're already following this writer." });
+    }
 
-    if (checks)
-      return res.status(201).json({
-        success: false,
-        message: "You're already following this writer.",
-      });
+    // Create a new follower entry
+    const newFollower = await Followers.create({ followerId, writerId });
 
-    const writer = await Users.findById(id);
+    // Update the writer's followers list
+    const writer = await Users.findByIdAndUpdate(writerId, { $push: { followers: newFollower._id } }, { new: true });
 
-    const newFollower = await Followers.create({
-      followerId,
-      writerId: id,
-    });
-
-    writer?.followers?.push(newFollower?._id);
-
-    await Users.findByIdAndUpdate(id, writer, { new: true });
-
-    res.status(201).json({
-      success: true,
-      message: "You're now following writer " + writer?.name,
-    });
+    res.status(201).json({ success: true, message: `You're now following writer ${writer.name}` });
   } catch (error) {
-    console.log(error);
-    res.status(404).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
-
 export const updateUser = async (req, res, next) => {
   try {
     const { userId } = req.body.user;
